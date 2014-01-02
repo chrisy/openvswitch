@@ -358,8 +358,9 @@ int ovs_vport_get_options(const struct vport *vport, struct sk_buff *skb)
  * Must be called with rcu_read_lock.  The packet cannot be shared and
  * skb->data should point to the Ethernet header.  The caller must have already
  * called compute_ip_summed() to initialize the checksumming fields.
+ * Returns 0 on success, or -errno otherwise.
  */
-void ovs_vport_receive(struct vport *vport, struct sk_buff *skb,
+int ovs_vport_receive(struct vport *vport, struct sk_buff *skb,
 		       struct ovs_key_ipv4_tunnel *tun_key)
 {
 	struct pcpu_tstats *stats;
@@ -371,7 +372,7 @@ void ovs_vport_receive(struct vport *vport, struct sk_buff *skb,
 	u64_stats_update_end(&stats->syncp);
 
 	OVS_CB(skb)->tun_key = tun_key;
-	ovs_dp_process_received_packet(vport, skb);
+	return ovs_dp_process_received_packet(vport, skb);
 }
 
 /**
@@ -403,6 +404,27 @@ int ovs_vport_send(struct vport *vport, struct sk_buff *skb)
 		ovs_vport_record_error(vport, VPORT_E_TX_DROPPED);
 
 	return sent;
+}
+
+/**
+ *	ovs_vport_insert - send a packet to the input queue
+ *
+ * @vport: vport from which to insert the packet
+ * @skb: skb to send
+ *
+ * Sends the given packet and returns the number of bytes data sent.
+ * Returns 0 if the packet was dropped and -errno for any errors.
+ * rcu_read_lock must be held.
+ */
+int ovs_vport_insert(struct vport *vport, struct sk_buff *skb)
+{
+	if (unlikely(vport->ops->insert == NULL))
+		return -EINVAL;
+
+	if (unlikely(skb->dev == NULL))
+		return -ENODEV;
+
+	return vport->ops->insert(skb);
 }
 
 /**

@@ -27,6 +27,10 @@
 #include <linux/skbuff.h>
 #include <linux/openvswitch.h>
 
+#ifdef CONFIG_NET_CLS_ACT
+#include <linux/pkt_cls.h>
+#endif
+
 #include <net/llc.h>
 
 #include "datapath.h"
@@ -34,7 +38,7 @@
 #include "vport-internal_dev.h"
 #include "vport-netdev.h"
 
-static void netdev_port_receive(struct vport *vport, struct sk_buff *skb);
+static bool netdev_port_receive(struct vport *vport, struct sk_buff *skb);
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,39)
 /* Called with rcu_read_lock and bottom-halves disabled. */
@@ -48,7 +52,10 @@ static rx_handler_result_t netdev_frame_hook(struct sk_buff **pskb)
 
 	vport = ovs_netdev_get_vport(skb->dev);
 
-	netdev_port_receive(vport, skb);
+	if (netdev_port_receive(vport, skb)) {
+		/* Tell the kernel we didn't want it. */
+		return RX_HANDLER_PASS;
+	}
 
 	return RX_HANDLER_CONSUMED;
 }
@@ -64,7 +71,10 @@ static struct sk_buff *netdev_frame_hook(struct sk_buff *skb)
 
 	vport = ovs_netdev_get_vport(skb->dev);
 
-	netdev_port_receive(vport, skb);
+	if (netdev_port_receive(vport, skb)) {
+		/* Tell the kernel we didn't want it. */
+		return skb;
+	}
 
 	return NULL;
 }
@@ -189,31 +199,51 @@ const char *ovs_netdev_get_name(const struct vport *vport)
 	return netdev_vport->dev->name;
 }
 
-/* Must be called with rcu_read_lock. */
-static void netdev_port_receive(struct vport *vport, struct sk_buff *skb)
+/* Must be called with rcu_read_lock.
+ * Returns true if we want the hook to return the packet to the kernel.
+ */
+static bool netdev_port_receive(struct vport *vport, struct sk_buff *skb)
 {
+	int error;
+
 	if (unlikely(!vport))
 		goto error;
 
 	if (unlikely(skb_warn_if_lro(skb)))
 		goto error;
 
-	/* Make our own copy of the packet.  Otherwise we will mangle the
-	 * packet for anyone who came before us (e.g. tcpdump via AF_PACKET).
-	 * (No one comes after us, since we tell handle_bridge() that we took
-	 * the packet.) */
+	/* Make a clone of the skb if someone else has a reference to it so
+	 * nothing we do with it interferes with anyone higher up the chain.
+	 */
 	skb = skb_share_check(skb, GFP_ATOMIC);
 	if (unlikely(!skb))
-		return;
+		return false;
 
 	skb_push(skb, ETH_HLEN);
 	ovs_skb_postpush_rcsum(skb, skb->data, ETH_HLEN);
 
-	ovs_vport_receive(vport, skb, NULL);
-	return;
+	OVS_CB(skb)->pkt_from_kernel = true;
+	OVS_CB(skb)->return_pkt_to_kernel = false;
+
+	error = ovs_vport_receive(vport, skb, NULL);
+	if (unlikely(error)) {
+		/* If we encountered an error, then the skb
+		 * has been freed and we cannot look at it
+		 * safely anymore. */
+		return false;
+	}
+
+	if (OVS_CB(skb)->return_pkt_to_kernel) {
+		/* Clean up the skb */
+		skb->protocol = eth_type_trans(skb, skb->dev);
+		return true;
+	}
+
+	return false;
 
 error:
 	kfree_skb(skb);
+	return false;
 }
 
 static unsigned int packet_length(const struct sk_buff *skb)
@@ -250,6 +280,47 @@ drop:
 	return 0;
 }
 
+/* Must be called with rcu_read_lock. */
+static int netdev_insert(struct sk_buff *skb)
+{
+	int len, ret;
+
+	if (unlikely(skb == NULL || skb->dev == NULL))
+		return -EINVAL;
+
+	/* The skb will have gone when we want this later. */
+	len = skb->len;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36)
+#ifdef CONFIG_NET_CLS_ACT
+	/* This flag will skip the top half of the
+	 * code in __netif_receive_skb(). */
+	skb->tc_verd = TC_NCLS;
+#else
+#warning Without kernel option CONFIG_NET_CLS_ACT some 'back_to_kernel' \
+		packets may deliver twice in AF_PACKET 'ALL' listeners, \
+		such as 'tcpdump' or 'lldpd'.
+#endif /* CONFIG_NET_CLS_ACT */
+
+	/* Send it! */
+	ret = netif_rx_ni(skb);
+
+#else
+	/* Unsupported kernel version. */
+	kfree_skb(skb);
+	return -EINVAL;
+
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36) */
+
+	if (likely(ret == NET_RX_SUCCESS)) {
+		return len;
+	} else if(ret == NET_RX_DROP) {
+		return 0;
+	}
+
+	return -EINVAL;
+}
+
 /* Returns null if this device is not attached to a datapath. */
 struct vport *ovs_netdev_get_vport(struct net_device *dev)
 {
@@ -278,6 +349,7 @@ const struct vport_ops ovs_netdev_vport_ops = {
 	.destroy	= netdev_destroy,
 	.get_name	= ovs_netdev_get_name,
 	.send		= netdev_send,
+	.insert		= netdev_insert,
 };
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,36) && \

@@ -1469,7 +1469,8 @@ int ovs_nla_copy_actions(const struct nlattr *attr,
 			[OVS_ACTION_ATTR_PUSH_VLAN] = sizeof(struct ovs_action_push_vlan),
 			[OVS_ACTION_ATTR_POP_VLAN] = 0,
 			[OVS_ACTION_ATTR_SET] = (u32)-1,
-			[OVS_ACTION_ATTR_SAMPLE] = (u32)-1
+			[OVS_ACTION_ATTR_SAMPLE] = (u32)-1,
+			[OVS_ACTION_ATTR_BACK_TO_KERNEL] = 0,
 		};
 		const struct ovs_action_push_vlan *vlan;
 		int type = nla_type(a);
@@ -1519,6 +1520,9 @@ int ovs_nla_copy_actions(const struct nlattr *attr,
 			if (err)
 				return err;
 			skip_copy = true;
+			break;
+
+		case OVS_ACTION_ATTR_BACK_TO_KERNEL:
 			break;
 
 		default:

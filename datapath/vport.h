@@ -51,6 +51,7 @@ int ovs_vport_set_options(struct vport *, struct nlattr *options);
 int ovs_vport_get_options(const struct vport *, struct sk_buff *);
 
 int ovs_vport_send(struct vport *, struct sk_buff *);
+int ovs_vport_insert(struct vport *, struct sk_buff *);
 
 /* The following definitions are for implementers of vport devices: */
 
@@ -146,6 +147,7 @@ struct vport_ops {
 	const char *(*get_name)(const struct vport *);
 
 	int (*send)(struct vport *, struct sk_buff *);
+	int (*insert)(struct sk_buff *);
 };
 
 enum vport_err_type {
@@ -191,7 +193,7 @@ static inline struct vport *vport_from_priv(void *priv)
 	return (struct vport *)((u8 *)priv - ALIGN(sizeof(struct vport), VPORT_ALIGN));
 }
 
-void ovs_vport_receive(struct vport *, struct sk_buff *,
+int ovs_vport_receive(struct vport *, struct sk_buff *,
 		       struct ovs_key_ipv4_tunnel *);
 
 /* List of statically compiled vport implementations.  Don't forget to also

@@ -405,6 +405,34 @@ static int do_output(struct datapath *dp, struct sk_buff *skb, int out_port)
 	return 0;
 }
 
+static int do_insert(struct datapath *dp, struct sk_buff *skb)
+{
+	struct vport *vport;
+	int error = 0;
+
+	if (unlikely(!skb))
+		return -ENOMEM;
+
+	if (likely(OVS_CB(skb)->pkt_from_kernel)) {
+		/* Since we got this packet from the kernel
+		 * we can simply set a flag to return it to
+		 * the kernel. */
+		OVS_CB(skb)->return_pkt_to_kernel = true;
+	} else {
+		/* We got this packet from userspace so we
+		 * need to insert this into the network input
+		 * queue. */
+		vport = ovs_vport_rcu(dp, OVS_CB(skb)->flow->key.phy.in_port);
+		if (unlikely(!vport)) {
+			kfree_skb(skb);
+			return -ENODEV;
+		}
+
+		error = ovs_vport_insert(vport, skb_clone(skb, GFP_ATOMIC));
+	}
+	return error;
+}
+
 static int output_userspace(struct datapath *dp, struct sk_buff *skb,
 			    const struct nlattr *attr)
 {
@@ -552,6 +580,18 @@ static int do_execute_actions(struct datapath *dp, struct sk_buff *skb,
 
 		case OVS_ACTION_ATTR_SAMPLE:
 			err = sample(dp, skb, a);
+			/* If a sampled output action has us send packets
+			 * back to the kernel, we need to keep the skb around. */
+			if (OVS_CB(skb)->return_pkt_to_kernel)
+				keep_skb = true;
+			break;
+
+		case OVS_ACTION_ATTR_BACK_TO_KERNEL:
+			do_insert(dp, skb);
+			/* If we need to return the packet to
+			 * the kernel, keep the skb for it. */
+			if (OVS_CB(skb)->return_pkt_to_kernel)
+				keep_skb = true;
 			break;
 		}
 

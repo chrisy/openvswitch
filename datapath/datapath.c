@@ -215,7 +215,7 @@ void ovs_dp_detach_port(struct vport *p)
 }
 
 /* Must be called with rcu_read_lock. */
-void ovs_dp_process_received_packet(struct vport *p, struct sk_buff *skb)
+int ovs_dp_process_received_packet(struct vport *p, struct sk_buff *skb)
 {
 	struct datapath *dp = p->dp;
 	struct sw_flow *flow;
@@ -231,7 +231,7 @@ void ovs_dp_process_received_packet(struct vport *p, struct sk_buff *skb)
 	error = ovs_flow_extract(skb, p->port_no, &key);
 	if (unlikely(error)) {
 		kfree_skb(skb);
-		return;
+		return error;
 	}
 
 	/* Look up flow. */
@@ -253,7 +253,7 @@ void ovs_dp_process_received_packet(struct vport *p, struct sk_buff *skb)
 	OVS_CB(skb)->pkt_key = &key;
 
 	ovs_flow_stats_update(OVS_CB(skb)->flow, skb);
-	ovs_execute_actions(dp, skb);
+	error = ovs_execute_actions(dp, skb);
 	stats_counter = &stats->n_hit;
 
 out:
@@ -262,6 +262,8 @@ out:
 	(*stats_counter)++;
 	stats->n_mask_hit += n_mask_hit;
 	u64_stats_update_end(&stats->sync);
+
+	return error;
 }
 
 static struct genl_family dp_packet_genl_family = {
@@ -552,12 +554,27 @@ static int ovs_packet_cmd_execute(struct sk_buff *skb, struct genl_info *info)
 	OVS_CB(packet)->pkt_key = &flow->key;
 	packet->priority = flow->key.phy.priority;
 	packet->mark = flow->key.phy.skb_mark;
+	OVS_CB(packet)->pkt_from_kernel = false;
 
 	rcu_read_lock();
 	dp = get_dp(sock_net(skb->sk), ovs_header->dp_ifindex);
 	err = -ENODEV;
 	if (!dp)
 		goto err_unlock;
+
+	/* Work out the dev of the original input port */
+	if (flow->key.phy.in_port != DP_MAX_PORTS &&
+			flow->key.phy.in_port != OVSP_LOCAL) {
+		struct vport *vport;
+		vport = ovs_vport_rcu(dp, flow->key.phy.in_port);
+		if (vport != NULL)
+			packet->dev = dev_get_by_name(sock_net(skb->sk),
+				vport->ops->get_name(vport));
+		if (packet->dev != NULL) {
+			packet->skb_iif = packet->dev->ifindex;
+			packet->protocol = eth_type_trans(packet, packet->dev);
+		}
+	}
 
 	local_bh_disable();
 	err = ovs_execute_actions(dp, packet);

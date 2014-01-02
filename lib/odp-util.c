@@ -81,6 +81,7 @@ odp_action_len(uint16_t type)
     case OVS_ACTION_ATTR_POP_MPLS: return sizeof(ovs_be16);
     case OVS_ACTION_ATTR_SET: return -2;
     case OVS_ACTION_ATTR_SAMPLE: return -2;
+    case OVS_ACTION_ATTR_BACK_TO_KERNEL: return 0;
 
     case OVS_ACTION_ATTR_UNSPEC:
     case __OVS_ACTION_ATTR_MAX:
@@ -438,6 +439,9 @@ format_odp_action(struct ds *ds, const struct nlattr *a)
     case OVS_ACTION_ATTR_SAMPLE:
         format_odp_sample_action(ds, a);
         break;
+    case OVS_ACTION_ATTR_BACK_TO_KERNEL:
+        ds_put_format(ds, "back_to_kernel");
+        break;
     case OVS_ACTION_ATTR_UNSPEC:
     case __OVS_ACTION_ATTR_MAX:
     default:
@@ -676,6 +680,14 @@ parse_odp_action(const char *s, const struct simap *port_names,
             nl_msg_end_nested(actions, sample_ofs);
 
             return s[n + 1] == ')' ? n + 2 : -EINVAL;
+        }
+    }
+
+    {
+        int len = strcspn(s, delimiters);
+        if (strncmp(s, "back_to_kernel", len) == 0) {
+            nl_msg_put_flag(actions, OVS_ACTION_ATTR_BACK_TO_KERNEL);
+            return len;
         }
     }
 

@@ -195,6 +195,7 @@ odp_execute_actions__(void *dp, struct ofpbuf *packet, struct pkt_metadata *md,
             /* These only make sense in the context of a datapath. */
         case OVS_ACTION_ATTR_OUTPUT:
         case OVS_ACTION_ATTR_USERSPACE:
+        case OVS_ACTION_ATTR_BACK_TO_KERNEL:
             if (dp_execute_action) {
                 /* Allow 'dp_execute_action' to steal the packet data if we do
                  * not need it any more. */

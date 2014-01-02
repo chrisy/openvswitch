@@ -569,6 +569,7 @@ enum ovs_action_attr {
 	OVS_ACTION_ATTR_SAMPLE,       /* Nested OVS_SAMPLE_ATTR_*. */
 	OVS_ACTION_ATTR_PUSH_MPLS,    /* struct ovs_action_push_mpls. */
 	OVS_ACTION_ATTR_POP_MPLS,     /* __be16 ethertype. */
+	OVS_ACTION_ATTR_BACK_TO_KERNEL, /* No argument. */
 	__OVS_ACTION_ATTR_MAX
 };
 

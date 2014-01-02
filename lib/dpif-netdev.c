@@ -1813,6 +1813,7 @@ dp_execute_cb(void *aux_, struct ofpbuf *packet,
     case OVS_ACTION_ATTR_POP_MPLS:
     case OVS_ACTION_ATTR_SET:
     case OVS_ACTION_ATTR_SAMPLE:
+    case OVS_ACTION_ATTR_BACK_TO_KERNEL:
     case OVS_ACTION_ATTR_UNSPEC:
     case __OVS_ACTION_ATTR_MAX:
         OVS_NOT_REACHED();

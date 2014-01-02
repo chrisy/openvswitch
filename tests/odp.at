@@ -253,6 +253,7 @@ pop_vlan
 sample(sample=9.7%,actions(1,2,3,push_vlan(vid=1,pcp=2)))
 set(tunnel(tun_id=0xabcdef1234567890,src=1.1.1.1,dst=2.2.2.2,tos=0x0,ttl=64,flags(df,csum,key)))
 set(tunnel(tun_id=0xabcdef1234567890,src=1.1.1.1,dst=2.2.2.2,tos=0x0,ttl=64,flags(key)))
+back_to_kernel
 ])
 AT_CHECK_UNQUOTED([test-odp parse-actions < actions.txt], [0],
   [`cat actions.txt`

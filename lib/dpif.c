@@ -1078,6 +1078,7 @@ dpif_execute_helper_cb(void *aux_, struct ofpbuf *packet,
     switch ((enum ovs_action_attr)type) {
     case OVS_ACTION_ATTR_OUTPUT:
     case OVS_ACTION_ATTR_USERSPACE:
+    case OVS_ACTION_ATTR_BACK_TO_KERNEL:
         execute.actions = action;
         execute.actions_len = NLA_ALIGN(action->nla_len);
         execute.packet = packet;

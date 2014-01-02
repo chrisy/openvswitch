@@ -100,11 +100,18 @@ struct datapath {
  * @pkt_key: The flow information extracted from the packet.  Must be nonnull.
  * @tun_key: Key for the tunnel that encapsulated this packet. NULL if the
  * packet is not being tunneled.
+ * @pkt_from_kernel: True if this packet was handed to us by the kernel, false
+ * if it came from userspace.
+ * @return_pkt_to_kernel: True if the action of a matching flow wants us to
+ * give this packet back to the kernel. Only relevant if it came from the
+ * kernel.
  */
 struct ovs_skb_cb {
 	struct sw_flow		*flow;
 	struct sw_flow_key	*pkt_key;
 	struct ovs_key_ipv4_tunnel  *tun_key;
+	bool			pkt_from_kernel;
+	bool			return_pkt_to_kernel;
 };
 #define OVS_CB(skb) ((struct ovs_skb_cb *)(skb)->cb)
 
@@ -186,7 +193,7 @@ static inline struct vport *ovs_vport_ovsl(const struct datapath *dp, int port_n
 extern struct notifier_block ovs_dp_device_notifier;
 extern struct genl_multicast_group ovs_dp_vport_multicast_group;
 
-void ovs_dp_process_received_packet(struct vport *, struct sk_buff *);
+int ovs_dp_process_received_packet(struct vport *, struct sk_buff *);
 void ovs_dp_detach_port(struct vport *);
 int ovs_dp_upcall(struct datapath *, struct sk_buff *,
 		  const struct dp_upcall_info *);
