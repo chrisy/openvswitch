@@ -345,6 +345,7 @@ check_overlap,actions=output:1,exit,output:2
 tcp,actions=fin_timeout(idle_timeout=5,hard_timeout=15)
 actions=controller(max_len=123,reason=invalid_ttl,id=555)
 actions=sample(probability=12345,collector_set_id=23456,obs_domain_id=34567,obs_point_id=45678)
+actions=back_to_kernel
 ]])
 
 AT_CHECK([ovs-ofctl parse-flows flows.txt
@@ -381,6 +382,7 @@ NXT_FLOW_MOD: ADD table:255 check_overlap actions=output:1,exit,output:2
 NXT_FLOW_MOD: ADD table:255 tcp actions=fin_timeout(idle_timeout=5,hard_timeout=15)
 NXT_FLOW_MOD: ADD table:255 actions=controller(reason=invalid_ttl,max_len=123,id=555)
 NXT_FLOW_MOD: ADD table:255 actions=sample(probability=12345,collector_set_id=23456,obs_domain_id=34567,obs_point_id=45678)
+NXT_FLOW_MOD: ADD table:255 actions=back_to_kernel
 ]])
 AT_CLEANUP
 

@@ -314,6 +314,7 @@ enum nx_action_subtype {
     NXAST_SAMPLE,               /* struct nx_action_sample */
     NXAST_SET_MPLS_LABEL,       /* struct nx_action_ttl */
     NXAST_SET_MPLS_TC,          /* struct nx_action_ttl */
+    NXAST_BACK_TO_KERNEL,       /* struct nx_action_header */
 };
 
 /* Header for Nicira-defined actions. */

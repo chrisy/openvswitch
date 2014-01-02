@@ -57,6 +57,7 @@
     DEFINE_OFPACT(ENQUEUE,         ofpact_enqueue,       ofpact)    \
     DEFINE_OFPACT(OUTPUT_REG,      ofpact_output_reg,    ofpact)    \
     DEFINE_OFPACT(BUNDLE,          ofpact_bundle,        slaves)    \
+    DEFINE_OFPACT(BACK_TO_KERNEL,  ofpact_back_to_kernel, ofpact)   \
                                                                     \
     /* Header changes. */                                           \
     DEFINE_OFPACT(SET_FIELD,       ofpact_set_field,     ofpact)    \
@@ -256,6 +257,13 @@ struct ofpact_bundle {
     /* Slaves for output. */
     unsigned int n_slaves;
     ofp_port_t slaves[];
+};
+
+/* OFPACT_BACK_TO_KERNEL
+ *
+ * Used for NXAST_BACK_TO_KERNEL. */
+struct ofpact_back_to_kernel {
+    struct ofpact ofpact;
 };
 
 /* OFPACT_SET_VLAN_VID.

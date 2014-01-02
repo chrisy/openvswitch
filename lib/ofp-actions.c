@@ -500,6 +500,10 @@ ofpact_from_nxast(const union ofp_action *a, enum ofputil_action_code code,
     case OFPUTIL_NXAST_SAMPLE:
         error = sample_from_openflow(&a->sample, out);
         break;
+
+    case OFPUTIL_NXAST_BACK_TO_KERNEL:
+        ofpact_put_BACK_TO_KERNEL(out);
+        break;
     }
 
     return error;
@@ -1328,6 +1332,7 @@ ofpact_is_set_action(const struct ofpact *a)
     case OFPACT_STRIP_VLAN:
     case OFPACT_WRITE_ACTIONS:
     case OFPACT_WRITE_METADATA:
+    case OFPACT_BACK_TO_KERNEL:
         return false;
     default:
         OVS_NOT_REACHED();
@@ -1387,6 +1392,7 @@ ofpact_is_allowed_in_actions_set(const struct ofpact *a)
     case OFPACT_SAMPLE:
     case OFPACT_STACK_POP:
     case OFPACT_STACK_PUSH:
+    case OFPACT_BACK_TO_KERNEL:
 
     /* The action set may only include actions and thus
      * may not include any instructions */
@@ -1625,6 +1631,7 @@ ovs_instruction_type_from_ofpact_type(enum ofpact_type type)
     case OFPACT_NOTE:
     case OFPACT_EXIT:
     case OFPACT_SAMPLE:
+    case OFPACT_BACK_TO_KERNEL:
     default:
         return OVSINST_OFPIT11_APPLY_ACTIONS;
     }
@@ -2111,6 +2118,9 @@ ofpact_check__(enum ofputil_protocol *usable_protocols, struct ofpact *a,
     case OFPACT_GROUP:
         return 0;
 
+    case OFPACT_BACK_TO_KERNEL:
+        return 0;
+
     default:
         OVS_NOT_REACHED();
     }
@@ -2344,6 +2354,14 @@ ofpact_sample_to_nxast(const struct ofpact_sample *os,
 }
 
 static void
+ofpact_back_to_kernel_to_nxast(
+                           const struct ofpact_back_to_kernel *oc OVS_UNUSED,
+                           struct ofpbuf *out)
+{
+    ofputil_put_NXAST_BACK_TO_KERNEL(out);
+}
+
+static void
 ofpact_to_nxast(const struct ofpact *a, struct ofpbuf *out)
 {
     switch (a->type) {
@@ -2451,6 +2469,10 @@ ofpact_to_nxast(const struct ofpact *a, struct ofpbuf *out)
 
     case OFPACT_SAMPLE:
         ofpact_sample_to_nxast(ofpact_get_SAMPLE(a), out);
+        break;
+
+    case OFPACT_BACK_TO_KERNEL:
+        ofpact_back_to_kernel_to_nxast(ofpact_get_BACK_TO_KERNEL(a), out);
         break;
 
     case OFPACT_GROUP:
@@ -2609,6 +2631,7 @@ ofpact_to_openflow10(const struct ofpact *a, struct ofpbuf *out)
     case OFPACT_PUSH_MPLS:
     case OFPACT_POP_MPLS:
     case OFPACT_SAMPLE:
+    case OFPACT_BACK_TO_KERNEL:
         ofpact_to_nxast(a, out);
         break;
     }
@@ -2802,6 +2825,7 @@ ofpact_to_openflow11(const struct ofpact *a, struct ofpbuf *out)
     case OFPACT_NOTE:
     case OFPACT_EXIT:
     case OFPACT_SAMPLE:
+    case OFPACT_BACK_TO_KERNEL:
         ofpact_to_nxast(a, out);
         break;
     }
@@ -3130,6 +3154,7 @@ ofpact_outputs_to_port(const struct ofpact *ofpact, ofp_port_t port)
     case OFPACT_GOTO_TABLE:
     case OFPACT_METER:
     case OFPACT_GROUP:
+    case OFPACT_BACK_TO_KERNEL:
     default:
         return false;
     }
@@ -3554,6 +3579,11 @@ ofpact_format(const struct ofpact *a, struct ds *s)
         ds_put_format(s, "group:%"PRIu32,
                       ofpact_get_GROUP(a)->group_id);
         break;
+
+    case OFPACT_BACK_TO_KERNEL:
+        ds_put_cstr(s, "back_to_kernel");
+        break;
+
     }
 }
 

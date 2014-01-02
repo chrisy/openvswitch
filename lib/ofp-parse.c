@@ -907,6 +907,10 @@ parse_named_action(enum ofputil_action_code code,
     case OFPUTIL_NXAST_SAMPLE:
         error = parse_sample(ofpacts, arg);
         break;
+
+    case OFPUTIL_NXAST_BACK_TO_KERNEL:
+        ofpact_put_BACK_TO_KERNEL(ofpacts);
+        break;
     }
 
     if (error) {

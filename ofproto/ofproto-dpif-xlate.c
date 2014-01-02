@@ -1671,6 +1671,22 @@ process_special(struct xlate_ctx *ctx, const struct flow *flow,
 }
 
 static void
+compose_back_to_kernel_action(struct xlate_ctx *ctx)
+{
+    ctx->xout->slow |= commit_odp_actions(&ctx->xin->flow,
+                                          &ctx->base_flow,
+                                          &ctx->xout->odp_actions,
+                                          &ctx->xout->wc);
+
+    nl_msg_put_flag(&ctx->xout->odp_actions,
+                    OVS_ACTION_ATTR_BACK_TO_KERNEL);
+
+    ctx->sflow_odp_port = ODPP_LOCAL;
+    ctx->sflow_n_outputs++;
+    ctx->xout->nf_output_iface = OFPP_LOCAL;
+}
+
+static void
 compose_output_action__(struct xlate_ctx *ctx, ofp_port_t ofp_port,
                         bool check_stp)
 {
@@ -2511,6 +2527,12 @@ xlate_action_set(struct xlate_ctx *ctx)
 }
 
 static void
+xlate_back_to_kernel_action(struct xlate_ctx *ctx)
+{
+    compose_back_to_kernel_action(ctx);
+}
+
+static void
 do_xlate_actions(const struct ofpact *ofpacts, size_t ofpacts_len,
                  struct xlate_ctx *ctx)
 {
@@ -2788,6 +2810,10 @@ do_xlate_actions(const struct ofpact *ofpacts, size_t ofpacts_len,
 
         case OFPACT_SAMPLE:
             xlate_sample_action(ctx, ofpact_get_SAMPLE(a));
+            break;
+
+        case OFPACT_BACK_TO_KERNEL:
+            xlate_back_to_kernel_action(ctx);
             break;
         }
     }

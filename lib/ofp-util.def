@@ -77,6 +77,7 @@ NXAST_ACTION(NXAST_DEC_MPLS_TTL,    nx_action_header,       0, "dec_mpls_ttl")
 NXAST_ACTION(NXAST_PUSH_MPLS,       nx_action_push_mpls,    0, "push_mpls")
 NXAST_ACTION(NXAST_POP_MPLS,        nx_action_pop_mpls,     0, "pop_mpls")
 NXAST_ACTION(NXAST_SAMPLE,          nx_action_sample,       0, "sample")
+NXAST_ACTION(NXAST_BACK_TO_KERNEL,  nx_action_header,       0, "back_to_kernel")
 
 #undef OFPAT10_ACTION
 #undef OFPAT11_ACTION

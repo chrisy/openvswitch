@@ -3878,3 +3878,18 @@ AT_CHECK([grep -c 'resubmits yielded over 64 kB of stack' ovs-vswitchd.log], [0]
 ])
 OVS_VSWITCHD_STOP(["/resubmits yielded over 64 kB of stack/d"])
 AT_CLEANUP
+
+AT_SETUP([ofproto-dpif - back_to_kernel])
+OVS_VSWITCHD_START
+ADD_OF_PORTS([br0], [1])
+AT_DATA([flows.txt], [dnl
+icmp action=back_to_kernel
+])
+AT_CHECK([ovs-ofctl add-flows br0 flows.txt])
+AT_CHECK([ovs-appctl ofproto/trace br0 'in_port=1,dl_src=50:54:00:00:00:05,dl_dst=50:54:00:00:00:07,dl_type=0x0800,nw_src=192.168.0.1,nw_dst=192.168.0.2,nw_proto=1,nw_tos=0,nw_ttl=128,icmp_type=8,icmp_code=0'], [0], [stdout])
+AT_CHECK([tail -1 stdout], [0],
+  [Datapath actions: back_to_kernel
+])
+OVS_VSWITCHD_STOP
+AT_CLEANUP
+

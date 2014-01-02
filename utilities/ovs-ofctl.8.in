@@ -1671,6 +1671,13 @@ configuring sample collector sets.
 .IP
 This action was added in Open vSwitch 1.10.90.
 .
+.IP "\fBback_to_kernel\fR"
+Causes packets that match to be returned to the system kernel as though 
+Open vSwitch never saw them. If this is not supported by the running
+kernel this is effectively a non-operation.
+.IP
+This action was added in Open vSwitch 2.1.x.
+.
 .IP "\fBexit\fR"
 This action causes Open vSwitch to immediately halt execution of
 further actions.  Those actions which have already been executed are
