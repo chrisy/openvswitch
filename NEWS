@@ -8,6 +8,8 @@ Post-v2.1.0
    - Upon the receipt of a SIGHUP signal, ovs-vswitchd no longer reopens its
      log file (it will terminate instead). Please use 'ovs-appctl vlog/reopen'
      instead.
+   - Add flow action 'back_to_kernel' to datapath and OpenFlow that can
+     return packets to the kernel as though OVS never saw them.
 
 
 v2.1.0 - xx xxx xxxx
