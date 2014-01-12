@@ -44,6 +44,7 @@ struct dpif_linux_vport {
     const uint32_t *upcall_pid;            /* OVS_VPORT_ATTR_UPCALL_PID. */
     const struct ovs_vport_stats *stats;   /* OVS_VPORT_ATTR_STATS. */
     const struct nlattr *options;          /* OVS_VPORT_ATTR_OPTIONS. */
+    uint32_t features;                     /* OVS_VPORT_ATTR_FEATURES */
     size_t options_len;
 };
 

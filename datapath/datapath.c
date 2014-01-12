@@ -1452,6 +1452,7 @@ static const struct nla_policy vport_policy[OVS_VPORT_ATTR_MAX + 1] = {
 	[OVS_VPORT_ATTR_PORT_NO] = { .type = NLA_U32 },
 	[OVS_VPORT_ATTR_TYPE] = { .type = NLA_U32 },
 	[OVS_VPORT_ATTR_UPCALL_PID] = { .type = NLA_U32 },
+	[OVS_VPORT_ATTR_FEATURES] = { .type = NLA_U32 },
 	[OVS_VPORT_ATTR_OPTIONS] = { .type = NLA_NESTED },
 };
 
@@ -1496,6 +1497,10 @@ static int ovs_vport_cmd_fill_info(struct vport *vport, struct sk_buff *skb,
 		goto nla_put_failure;
 
 	err = ovs_vport_get_options(vport, skb);
+	if (err == -EMSGSIZE)
+		goto error;
+
+	err = ovs_vport_get_features(vport, skb);
 	if (err == -EMSGSIZE)
 		goto error;
 

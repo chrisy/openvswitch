@@ -278,6 +278,15 @@ const struct vport_ops ovs_netdev_vport_ops = {
 	.destroy	= netdev_destroy,
 	.get_name	= ovs_netdev_get_name,
 	.send		= netdev_send,
+	.features	=
+/* Example use for the back_to_kernel patches */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36)
+			  OVS_VPORT_F_BACK_TO_KERNEL |
+#endif
+#ifdef XXX_LINUX_HAS_BETTER_PACKET_INSERT_METHOD
+			  OVS_VPORT_F_BACK_TO_KERNEL_STATS_SAFE |
+#endif
+			  0
 };
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,36) && \

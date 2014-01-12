@@ -49,6 +49,7 @@ void ovs_vport_get_stats(struct vport *, struct ovs_vport_stats *);
 
 int ovs_vport_set_options(struct vport *, struct nlattr *options);
 int ovs_vport_get_options(const struct vport *, struct sk_buff *);
+int ovs_vport_get_features(const struct vport *, struct sk_buff *);
 
 int ovs_vport_send(struct vport *, struct sk_buff *);
 
@@ -134,6 +135,7 @@ struct vport_parms {
  */
 struct vport_ops {
 	enum ovs_vport_type type;
+	u32 features;
 
 	/* Called with ovs_mutex. */
 	struct vport *(*create)(const struct vport_parms *);

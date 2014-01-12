@@ -349,6 +349,33 @@ int ovs_vport_get_options(const struct vport *vport, struct sk_buff *skb)
 }
 
 /**
+ *	ovs_vport_get_features - retrieve device features
+ *
+ * @vport: vport from which to retrieve the options.
+ * @skb: sk_buff where options should be appended.
+ *
+ * Retrieves the static features of the given device, appending an
+ * %OVS_VPORT_ATTR_FEATURES attribute.
+ *
+ * Returns 0 if successful, -EMSGSIZE if @skb has insufficient room, or another
+ * negative error code if a real error occurred.  If an error occurs, @skb is
+ * left unmodified.
+ *
+ * Must be called with ovs_mutex or rcu_read_lock.
+ */
+int ovs_vport_get_features(const struct vport *vport, struct sk_buff *skb)
+{
+	if (!vport->ops->features)
+		return 0;
+
+	if (nla_put_u32(skb, OVS_VPORT_ATTR_FEATURES,
+			vport->ops->features))
+		return -EMSGSIZE;
+
+	return 0;
+}
+
+/**
  *	ovs_vport_receive - pass up received packet to the datapath for processing
  *
  * @vport: vport that received the packet

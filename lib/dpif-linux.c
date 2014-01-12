@@ -1706,6 +1706,7 @@ dpif_linux_vport_from_ofpbuf(struct dpif_linux_vport *vport,
         [OVS_VPORT_ATTR_UPCALL_PID] = { .type = NL_A_U32 },
         [OVS_VPORT_ATTR_STATS] = { NL_POLICY_FOR(struct ovs_vport_stats),
                                    .optional = true },
+        [OVS_VPORT_ATTR_FEATURES] = { .type = NL_A_U32, .optional = true },
         [OVS_VPORT_ATTR_OPTIONS] = { .type = NL_A_NESTED, .optional = true },
     };
 
@@ -1743,6 +1744,10 @@ dpif_linux_vport_from_ofpbuf(struct dpif_linux_vport *vport,
         vport->options = nl_attr_get(a[OVS_VPORT_ATTR_OPTIONS]);
         vport->options_len = nl_attr_get_size(a[OVS_VPORT_ATTR_OPTIONS]);
     }
+    if (a[OVS_VPORT_ATTR_FEATURES]) {
+        vport->features = nl_attr_get_u32(a[OVS_VPORT_ATTR_FEATURES]);
+    }
+
     return 0;
 }
 

@@ -230,6 +230,8 @@ enum ovs_vport_type {
  * this port.  A value of zero indicates that upcalls should not be sent.
  * @OVS_VPORT_ATTR_STATS: A &struct ovs_vport_stats giving statistics for
  * packets sent or received through the vport.
+ * @OVS_VPORT_ATTR_FEATURES: Features that the kernel module advertises
+ * to the userspace for each port.
  *
  * These attributes follow the &struct ovs_header within the Generic Netlink
  * payload for %OVS_VPORT_* commands.
@@ -253,6 +255,7 @@ enum ovs_vport_attr {
 	OVS_VPORT_ATTR_OPTIONS, /* nested attributes, varies by vport type */
 	OVS_VPORT_ATTR_UPCALL_PID, /* u32 Netlink PID to receive upcalls */
 	OVS_VPORT_ATTR_STATS,	/* struct ovs_vport_stats */
+	OVS_VPORT_ATTR_FEATURES, /* OVS_VPORT_F_*  */
 	__OVS_VPORT_ATTR_MAX
 };
 
@@ -267,6 +270,11 @@ enum {
 };
 
 #define OVS_TUNNEL_ATTR_MAX (__OVS_TUNNEL_ATTR_MAX - 1)
+
+/* We have the 'back_to_kernel' action. */
+#define OVS_VPORT_F_BACK_TO_KERNEL		(1 << 0)
+/* Using 'back_to_kernel' doesn't double-count any packets */
+#define OVS_VPORT_F_BACK_TO_KERNEL_STATS_SAFE	(1 << 1)
 
 /* Flows. */
 
