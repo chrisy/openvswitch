@@ -291,6 +291,9 @@ AC_DEFUN([OVS_CHECK_LINUX_COMPAT], [
   OVS_GREP_IFELSE([$KSRC/include/linux/openvswitch.h], [openvswitch_handle_frame_hook],
                   [OVS_DEFINE([HAVE_RHEL_OVS_HOOK])])
 
+  OVS_GREP_IFELSE([$KSRC/include/linux/netdevice.h], [netif_receive_skb_finish],
+                  [OVS_DEFINE([HAVE_NETIF_RECEIVE_SKB_FINISH])])
+
   OVS_CHECK_LOG2_H
 
   if cmp -s datapath/linux/kcompat.h.new \

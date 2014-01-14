@@ -291,7 +291,11 @@ static int netdev_insert(struct sk_buff *skb)
 	/* The skb will have gone when we want this later. */
 	len = skb->len;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36)
+#ifdef HAVE_NETIF_RECEIVE_SKB_FINISH
+	/* Deliver to the lower-half of the network receive path. */
+	ret = netif_receive_skb_finish(skb);
+
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36)
 #ifdef CONFIG_NET_CLS_ACT
 	/* This flag will skip the top half of the
 	 * code in __netif_receive_skb(). */
